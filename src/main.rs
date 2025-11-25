@@ -40,4 +40,15 @@ fn main() {
 
     // Call the correct day
     println!("Hello, world!");
+
+
+    // Ohh! Idea!
+    // Return an object that has multiple different generator functions
+    // It wraps the file handle for the correct data and exposes multiple different ways to access
+    // the data. Stuff like
+    // fn get_lines()
+    // fn get_chars()
+    // fn get_string()
+    //
+    // This can help optimize certain ways of processing the data!
 }
