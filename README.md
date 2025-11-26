@@ -4,6 +4,11 @@
 
 `cargo build --release`
 
-`./aoc $DAY $PART [$TEST] # $TEST is 1 or 0 or nothing. Will default to 1.`
+`./aoc $DAY $PART [$TEST] [$LOG_LEVEL]`
 
-`#Also --debug to enable logging`
+```BASH
+$DAY=1-13;
+$PART=1,2;
+$TEST=0,1; # Defaults to 1 if not supplied
+$LOG_LEVEL=ERROR,WARNING,INFO,DEBUG,NONE; # Defaults to ERROR if not supplied
+```
