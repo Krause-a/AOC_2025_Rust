@@ -11,7 +11,6 @@ mod day_09;
 mod day_10;
 mod day_11;
 mod day_12;
-mod day_13;
 use std::{fs, path::PathBuf};
 
 fn main() {
@@ -43,16 +42,13 @@ fn main() {
     utility::log::parse_and_set_log_level(debug_string.unwrap_or("".to_string()).as_str());
 
     // 2. Select the correct data file
-    let mut data_file_name = format!("data/{day:02}_{part}");
+    let mut data_file_name = format!("data/{day:02}");
     if use_test_set {
-        data_file_name += "_test";
+        data_file_name += format!("_{part}_test").as_str();
     }
     let file_metadata = fs::metadata(data_file_name.clone()).expect("Couldn't open file metadata");
-    if file_metadata.len() < 5 {
-        data_file_name = format!("data/{day:02}_1");
-        if use_test_set {
-            data_file_name += "_test";
-        }
+    if file_metadata.len() < 5 && use_test_set {
+        data_file_name = format!("data/{day:02}_1_test");
     }
     let test_data = utility::TestData::new(PathBuf::from(data_file_name));
 
@@ -122,11 +118,6 @@ fn run_day_part(day: usize, part: usize, test_data: utility::TestData) -> String
         12 => match part {
             1 => day_12::part_1(test_data),
             2 => day_12::part_2(test_data),
-            _ => unimplemented!(),
-        }
-        13 => match part {
-            1 => day_13::part_1(test_data),
-            2 => day_13::part_2(test_data),
             _ => unimplemented!(),
         }
         _ => unimplemented!(),

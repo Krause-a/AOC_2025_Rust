@@ -2,9 +2,9 @@
 use crate::utility::*;
 
 pub fn part_1(test_data: TestData) -> String {
-    return String::from("Wowies Day 1 Part 1");
+    return test_data.get_string().unwrap();
 }
 
 pub fn part_2(test_data: TestData) -> String {
-    return String::from("Wowies Day 1 Part 2");
+    return test_data.get_string().unwrap();
 }
