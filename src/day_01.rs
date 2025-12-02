@@ -6,7 +6,6 @@ pub fn part_1(test_data: TestData) -> String {
     let mut lines = test_data.get_lines().unwrap();
     let mut zeros = 0;
     while let Some(line) = lines.next() {
-        let line = line.unwrap();
         if line.starts_with("R") {
             pos += line[1..].parse::<isize>().unwrap();
         }
@@ -23,6 +22,7 @@ pub fn part_1(test_data: TestData) -> String {
             zeros += 1
         }
     }
+
     return zeros.to_string();
 }
 
@@ -31,7 +31,6 @@ pub fn part_2(test_data: TestData) -> String {
     let mut lines = test_data.get_lines().unwrap();
     let mut zeros = 0;
     while let Some(line) = lines.next() {
-        let line = line.unwrap();
         let mut pos_was_zero = pos == 0;
         if line.starts_with("R") {
             pos += line[1..].parse::<isize>().unwrap();
@@ -54,7 +53,7 @@ pub fn part_2(test_data: TestData) -> String {
             pos -= 100;
             zeros += 1;
         }
-        log::debug(&format!("{:04}: {pos} {}", zeros, line));
+        log::debug(|| format!("{:04}: {pos} {}", zeros, line));
     }
     return zeros.to_string();
 }

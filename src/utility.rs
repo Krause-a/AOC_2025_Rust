@@ -1,6 +1,6 @@
 #![allow(unused, dead_code)]
 
-use std::{fs, io::{self, BufRead, Read}};
+use std::{fs, io::{self, BufRead, Bytes, Lines, Read}};
 
 pub struct TestData {
     file_path: std::path::PathBuf,
@@ -19,15 +19,48 @@ impl TestData {
         f.read_to_string(&mut s)?;
         Ok(s)
     }
-    pub fn get_lines(self: &Self) -> Result<io::Lines<io::BufReader<fs::File>>, io::Error> {
+    pub fn get_lines(self: &Self) -> Result<AssumeLines<io::BufReader<fs::File>>, io::Error> {
         let f = self.open_file()?;
         let reader = io::BufReader::new(f);
-        Ok(reader.lines())
+        Ok(reader.assume_lines())
     }
-    pub fn get_chars(self: &Self) -> Result<impl Iterator<Item = io::Result<char>>, io::Error> {
+    pub fn get_chars(self: &Self) -> Result<AssumeChars<io::BufReader<fs::File>>, io::Error> {
         let f = self.open_file()?;
         let reader = io::BufReader::new(f);
-        Ok(reader.bytes().map(|br| br.map(|b| b as char)))
+        Ok(reader.assume_chars())
+    }
+}
+
+pub struct AssumeLines<R: BufRead> {
+    inner: Lines<R>,
+}
+
+impl<R: BufRead> Iterator for AssumeLines<R> {
+    type Item = String;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|l| l.unwrap())
+    }
+}
+
+trait AsssumeBufRead: BufRead + Sized {
+    fn assume_lines(self) -> AssumeLines<Self> {
+        AssumeLines { inner: self.lines() }
+    }
+    fn assume_chars(self) -> AssumeChars<Self> {
+        AssumeChars { inner: self.bytes() }
+    }
+}
+
+impl<R: BufRead> AsssumeBufRead for R {}
+
+pub struct AssumeChars<R: BufRead> {
+    inner: Bytes<R>
+}
+
+impl<R: BufRead> Iterator for AssumeChars<R> {
+    type Item = char;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|b| b.unwrap() as char)
     }
 }
 
@@ -45,19 +78,19 @@ pub mod log {
         LOG_LEVEL.set(level).expect("Log level set twice!");
     }
 
-    pub fn error(msg: &str) {
-        log(LogLevel::Error, msg);
+    pub fn error<F: FnOnce() -> String>(msg_fn: F) {
+        log(LogLevel::Error, msg_fn);
     }
-    pub fn warn(msg: &str) {
-        log(LogLevel::Warning, msg);
+    pub fn warn<F: FnOnce() -> String>(msg_fn: F) {
+        log(LogLevel::Warning, msg_fn);
     }
-    pub fn info(msg: &str) {
-        log(LogLevel::Info, msg);
+    pub fn info<F: FnOnce() -> String>(msg_fn: F) {
+        log(LogLevel::Info, msg_fn);
     }
-    pub fn debug(msg: &str) {
-        log(LogLevel::Debug, msg);
+    pub fn debug<F: FnOnce() -> String>(msg_fn: F) {
+        log(LogLevel::Debug, msg_fn);
     }
-    fn log(level: LogLevel, msg: &str) {
+    fn log<F: FnOnce() -> String>(level: LogLevel, msg_fn: F) {
         if level <= *LOG_LEVEL.get_or_init(|| LogLevel::Error) {
             let prefix = match level {
                 LogLevel::Error => "ERROR",
@@ -66,6 +99,7 @@ pub mod log {
                 LogLevel::Debug => "DEBUG",
                 LogLevel::None => "",
             };
+            let msg = msg_fn();
             eprintln!("[{prefix}] {msg}");
         }
     }
