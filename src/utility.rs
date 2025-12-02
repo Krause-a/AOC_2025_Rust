@@ -175,6 +175,7 @@ pub mod log {
     }
 }
 
+#[deprecated = "Just use <,>,="]
 pub fn str_num_compare(a: &str, b: &str) -> cmp::Ordering {
     if a.len() != b.len() {
         if a.len() > b.len() {
@@ -197,4 +198,41 @@ pub fn str_num_compare(a: &str, b: &str) -> cmp::Ordering {
         }
     }
     return cmp::Ordering::Equal;
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_str_num_compare() {
+        let a = vec![
+            "123",
+            "222222",
+            "899845",
+            "987654322",
+            "987654322",
+            "98",
+        ];
+        let b = vec![
+            "123",
+            "222122",
+            "999845",
+            "987654321",
+            "987654",
+            "987654",
+        ];
+        let res = vec![
+            cmp::Ordering::Equal,
+            cmp::Ordering::Greater,
+            cmp::Ordering::Less,
+            cmp::Ordering::Greater,
+            cmp::Ordering::Greater,
+            cmp::Ordering::Less,
+        ];
+        for i in 0..a.len() {
+            assert_eq!(str_num_compare(a[i], b[i]), res[i], "Failed at index \"{i}\"");
+            assert_eq!(a[i].cmp(b[i]), res[i], "Failed at index on cmp \"{i}\"");
+        }
+    }
 }
