@@ -23,8 +23,11 @@ fn main() {
     let mut args = std::env::args();
     let _called_exec = args.next();
     let day : usize = args.next().expect("Missing DAY argument").parse().expect("DAY argument must be a number");
-    let part : usize = args.next().expect("Missing PART argument").parse().expect("PART argument must be a number");
-    let mut use_test_set = true;
+    let mut part : usize = 0;
+    if let Some(part_str) = args.next() {
+        part = part_str.parse().expect("PART argument must be a number");
+    }
+    let mut use_test_set = part != 0;
     let mut debug_string = None;
     if let Some(third_arg) = args.next() {
         if let Ok(test_set_num) = third_arg.parse::<usize>() {
@@ -50,14 +53,21 @@ fn main() {
     if file_metadata.len() < 5 && use_test_set {
         data_file_name = format!("data/{day:02}_1_test");
     }
-    let test_data = utility::TestData::new(PathBuf::from(data_file_name), day, part, use_test_set);
+    let mut test_data = utility::TestData::new(PathBuf::from(data_file_name.clone()), day, part, use_test_set);
 
     // 3. Run correct day part
     let start = std::time::Instant::now();
-    let answer = run_day_part(day, part, test_data);
+    let answer;
+    if part == 0 {
+        let answer_1 = run_day_part(day, 1, test_data);
+        test_data = utility::TestData::new(PathBuf::from(data_file_name), day, part, use_test_set);
+        println!("The part 1 answer is: {answer_1}");
+        part = 2
+    }
+    answer = run_day_part(day, part, test_data);
+    println!("The part {part} answer is: {answer}");
     let duration = start.elapsed();
 
-    println!("The answer is: {answer}");
     println!("Found in ({:?})", duration);
 
 }
