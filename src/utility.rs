@@ -1,14 +1,18 @@
 #![allow(unused, dead_code)]
 
-use std::{cmp, fs, io::{self, BufRead, Bytes, Lines, Read}};
+use std::{cmp, collections::HashMap, fs, io::{self, BufRead, Bytes, Lines, Read}};
 
 pub struct TestData {
     file_path: std::path::PathBuf,
+    day: usize,
+    part: usize,
+    test: bool,
+    answers: Option<HashMap<String, isize>>,
 }
 
 impl TestData {
-    pub fn new(file_path: std::path::PathBuf) -> TestData {
-        TestData { file_path: file_path }
+    pub fn new(file_path: std::path::PathBuf, day: usize, part: usize, test: bool) -> TestData {
+        TestData { file_path: file_path, day: day, part: part, test: test, answers: None }
     }
     fn open_file(self: &Self) -> Result<fs::File, io::Error> {
         fs::File::open(&self.file_path)
@@ -33,6 +37,70 @@ impl TestData {
         let f = self.open_file()?;
         let reader = io::BufReader::new(f);
         Ok(reader.assume_words(separator))
+    }
+    pub fn compare_answer(self: &mut Self, check_answer: isize) -> String {
+        if self.answers.is_none() {
+            let mut answers = HashMap::new();
+            let mut all_answers = String::new();
+            let fh = fs::File::open("./data/answers").unwrap().read_to_string(&mut all_answers).unwrap();
+            let mut in_day = false;
+            let day_str = format!("day_{}", self.day);
+            for line in all_answers.lines().filter(|l| l.trim().len() > 0) {
+                if line.starts_with(&day_str) {
+                    in_day = true;
+                    continue;
+                }
+                else if line.starts_with("day_") {
+                    in_day = false;
+                }
+                if !in_day {
+                    continue;
+                }
+                let (key, value) = line.split_once("=").unwrap();
+                answers.insert(key.to_string(), value.parse().unwrap());
+            }
+            self.answers = Some(answers);
+        }
+        let answers = self.answers.as_ref().unwrap();
+        let part_str = format!("part_{}", self.part);
+        let mut low_key = String::new();
+        let mut high_key = String::new();
+        let mut exact_key = part_str.clone();
+        if self.test {
+            exact_key += "_test";
+        }
+        else {
+            low_key = part_str.clone() + "_low";
+            high_key = part_str.clone() + "_high";
+        }
+
+        if answers.contains_key(&exact_key) {
+            let answer = *answers.get(&exact_key).unwrap();
+            if answer > check_answer {
+                return format!("Given value ({}) is less than answers ({})", check_answer, answer);
+            }
+            else if answer < check_answer {
+                return format!("Given value ({}) is greater than answers ({})", check_answer, answer);
+            }
+            else {
+                return format!("Given value ({}) is equal to answer", check_answer);
+            }
+        }
+        else {
+            if answers.contains_key(&low_key) {
+                let low = *answers.get(&low_key).unwrap();
+                if check_answer <= low {
+                    return format!("Given value ({}) is less than current low ({})", check_answer, low);
+                }
+            }
+            if answers.contains_key(&high_key) {
+                let high = *answers.get(&high_key).unwrap();
+                if check_answer <= high {
+                    return format!("Given value ({}) is less than current high ({})", check_answer, high);
+                }
+            }
+        }
+        return String::new();
     }
 }
 

@@ -1,0 +1,15 @@
+day_1
+part_1_test=3
+part_1_low=1000
+part_1_high=2000
+part_1=1147
+part_2_test=6
+part_2_low=6000
+part_2=6789
+
+day_2
+part_1_test=1227775554
+part_1_low=1000
+part_1=30599400849
+part_2_test=4174379265
+part_2=46270373595

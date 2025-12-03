@@ -50,7 +50,7 @@ fn main() {
     if file_metadata.len() < 5 && use_test_set {
         data_file_name = format!("data/{day:02}_1_test");
     }
-    let test_data = utility::TestData::new(PathBuf::from(data_file_name));
+    let test_data = utility::TestData::new(PathBuf::from(data_file_name), day, part, use_test_set);
 
     // 3. Run correct day part
     let start = std::time::Instant::now();
