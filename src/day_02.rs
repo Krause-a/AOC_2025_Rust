@@ -54,8 +54,21 @@ pub fn part_2(test_data: TestData) -> String {
 
         let mut id = low.to_string();
         while id.num_le(high) {
-            // This walks every id in the range.
-            let next_id = (id.parse::<usize>().unwrap() + 1).to_string();
+            let next_id;
+            // My first solution had only the len() < 2 case for all ids
+            // Adding the half stepper took the runtime from 200ms to 200µs
+            if id.len() < 2 {
+                next_id = (id.parse::<usize>().unwrap() + 1).to_string();
+            }
+            else {
+                let half_len = id.len() / 2;
+                let half_id = &id[..half_len];
+                log::debug(|| format!("{half_id}"));
+                let next_half_id_num = half_id.parse::<usize>().unwrap() + 1;
+                next_id = next_half_id_num.to_string() + &"0".repeat(id.len() - half_len);
+            }
+
+
             for repeats in 2..=id.len() {
                 if id.len() % repeats != 0 {
                     continue;
