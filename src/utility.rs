@@ -12,7 +12,28 @@ pub struct TestData {
 
 impl TestData {
     pub fn new(file_path: std::path::PathBuf, day: usize, part: usize, test: bool) -> TestData {
-        TestData { file_path: file_path, day: day, part: part, test: test, answers: None }
+        let mut test_data = TestData { file_path: file_path, day: day, part: part, test: test, answers: None };
+        let mut answers = HashMap::new();
+        let mut all_answers = String::new();
+        let fh = fs::File::open("./data/answers").unwrap().read_to_string(&mut all_answers).unwrap();
+        let mut in_day = false;
+        let day_str = format!("day_{}", test_data.day);
+        for line in all_answers.lines().filter(|l| l.trim().len() > 0) {
+            if line.starts_with(&day_str) {
+                in_day = true;
+                continue;
+            }
+            else if line.starts_with("day_") {
+                in_day = false;
+            }
+            if !in_day {
+                continue;
+            }
+            let (key, value) = line.split_once("=").unwrap();
+            answers.insert(key.to_string(), value.parse().unwrap());
+        }
+        test_data.answers = Some(answers);
+        test_data
     }
     fn open_file(self: &Self) -> Result<fs::File, io::Error> {
         fs::File::open(&self.file_path)
@@ -38,29 +59,7 @@ impl TestData {
         let reader = io::BufReader::new(f);
         Ok(reader.assume_words(separator))
     }
-    pub fn compare_answer(self: &mut Self, check_answer: isize) -> String {
-        if self.answers.is_none() {
-            let mut answers = HashMap::new();
-            let mut all_answers = String::new();
-            let fh = fs::File::open("./data/answers").unwrap().read_to_string(&mut all_answers).unwrap();
-            let mut in_day = false;
-            let day_str = format!("day_{}", self.day);
-            for line in all_answers.lines().filter(|l| l.trim().len() > 0) {
-                if line.starts_with(&day_str) {
-                    in_day = true;
-                    continue;
-                }
-                else if line.starts_with("day_") {
-                    in_day = false;
-                }
-                if !in_day {
-                    continue;
-                }
-                let (key, value) = line.split_once("=").unwrap();
-                answers.insert(key.to_string(), value.parse().unwrap());
-            }
-            self.answers = Some(answers);
-        }
+    pub fn compare_answer(self: &Self, check_answer: isize) -> String {
         let answers = self.answers.as_ref().unwrap();
         let part_str = format!("part_{}", self.part);
         let mut low_key = String::new();
