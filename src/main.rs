@@ -53,9 +53,12 @@ fn main() {
     let test_data = utility::TestData::new(PathBuf::from(data_file_name));
 
     // 3. Run correct day part
+    let start = std::time::Instant::now();
     let answer = run_day_part(day, part, test_data);
+    let duration = start.elapsed();
 
     println!("The answer is: {answer}");
+    println!("Found in ({:?})", duration);
 
 }
 fn run_day_part(day: usize, part: usize, test_data: utility::TestData) -> String {

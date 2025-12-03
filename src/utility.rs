@@ -175,29 +175,42 @@ pub mod log {
     }
 }
 
-#[deprecated = "Just use <,>,="]
-pub fn str_num_compare(a: &str, b: &str) -> cmp::Ordering {
-    if a.len() != b.len() {
-        if a.len() > b.len() {
+pub trait StrNum {
+    fn num_cmp(self: Self, other: Self) -> cmp::Ordering;
+    fn num_gt(self: Self, other: Self) -> bool;
+    fn num_ge(self: Self, other: Self) -> bool;
+    fn num_lt(self: Self, other: Self) -> bool;
+    fn num_le(self: Self, other: Self) -> bool;
+    fn num_eq(self: Self, other: Self) -> bool;
+}
+
+impl StrNum for &str {
+    fn num_cmp(self: Self, other: Self) -> cmp::Ordering {
+        if self.len() > other.len() {
             return cmp::Ordering::Greater;
         }
-        else {
+        else if self.len() < other.len() {
             return cmp::Ordering::Less;
         }
-    }
-    else {
-        for i in 0..a.len() {
-            let a_digit = a[i..=i].parse::<u8>().unwrap();
-            let b_digit = b[i..=i].parse::<u8>().unwrap();
-            if a_digit > b_digit {
-                return cmp::Ordering::Greater;
-            }
-            else if a_digit < b_digit {
-                return cmp::Ordering::Less;
-            }
+        else {
+            return self.cmp(other);
         }
     }
-    return cmp::Ordering::Equal;
+    fn num_gt(self: Self, other: Self) -> bool {
+        return self.num_cmp(other) == cmp::Ordering::Greater;
+    }
+    fn num_ge(self: Self, other: Self) -> bool {
+        return self.num_cmp(other) != cmp::Ordering::Less;
+    }
+    fn num_lt(self: Self, other: &str) -> bool {
+        return self.num_cmp(other) == cmp::Ordering::Less;
+    }
+    fn num_le(self: Self, other: Self) -> bool {
+        return self.num_cmp(other) != cmp::Ordering::Greater;
+    }
+    fn num_eq(self: Self, other: Self) -> bool {
+        return self.num_cmp(other) == cmp::Ordering::Equal;
+    }
 }
 
 #[cfg(test)]
@@ -205,8 +218,9 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_str_num_compare() {
+    fn test_str_num_cmp() {
         let a = vec![
+            "95",
             "123",
             "222222",
             "899845",
@@ -215,6 +229,7 @@ mod test {
             "98",
         ];
         let b = vec![
+            "115",
             "123",
             "222122",
             "999845",
@@ -223,6 +238,7 @@ mod test {
             "987654",
         ];
         let res = vec![
+            cmp::Ordering::Less,
             cmp::Ordering::Equal,
             cmp::Ordering::Greater,
             cmp::Ordering::Less,
@@ -231,8 +247,7 @@ mod test {
             cmp::Ordering::Less,
         ];
         for i in 0..a.len() {
-            assert_eq!(str_num_compare(a[i], b[i]), res[i], "Failed at index \"{i}\"");
-            assert_eq!(a[i].cmp(b[i]), res[i], "Failed at index on cmp \"{i}\"");
+            assert_eq!(a[i].num_cmp(b[i]), res[i], "Failed at index on trait \"{i}\"");
         }
     }
 }
