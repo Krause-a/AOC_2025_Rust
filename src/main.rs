@@ -219,13 +219,13 @@ fn compare_to_answer(maybe_answer: &str, day: usize, part: usize, is_test: bool)
             if answers.contains_key(&low_key) {
                 let low = *answers.get(&low_key).unwrap();
                 if num_maybe_answer <= low {
-                    return format!("Given value ({}) is less than current low ({})", maybe_answer, low);
+                    return format!("Given value ({}) is less than or equal to current low ({})", maybe_answer, low);
                 }
             }
             if answers.contains_key(&high_key) {
                 let high = *answers.get(&high_key).unwrap();
-                if num_maybe_answer <= high {
-                    return format!("Given value ({}) is less than current high ({})", maybe_answer, high);
+                if num_maybe_answer >= high {
+                    return format!("Given value ({}) is greater than or equal to current high ({})", maybe_answer, high);
                 }
             }
         }

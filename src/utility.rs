@@ -91,7 +91,7 @@ impl Point {
             Point::new(self.x - 1, self.y),
             Point::new(self.x - 1, self.y - 1),
             Point::new(self.x, self.y - 1),
-            Point::new(self.x - 1, self.y - 1),
+            Point::new(self.x + 1, self.y - 1),
         ]
     }
     pub fn cardinal_neighbors_in<T>(self: &Self, map: &HashMap<Point, T>) -> Vec<Point> {
