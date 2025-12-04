@@ -24,22 +24,20 @@ pub fn part_1(test_data: TestData) -> String {
 pub fn part_2(test_data: TestData) -> String {
     let grid = test_data.get_grid().unwrap();
     let mut roll_grid : HashMap<Point, usize> = HashMap::with_capacity(grid.len());
-    for (p, &c) in grid.iter() {
+    for (&p, &c) in grid.iter() {
         if c != '@' {
             continue;
         }
+        let mut neighbor_count = 0;
         for n in p.all_neighbors_in(&grid) {
-            if let Some(&c) = grid.get(&n) {
-                if c != '@' {
+            if let Some(&inner_c) = grid.get(&n) {
+                if inner_c != '@' {
                     continue;
                 }
             }
-            let mut roll_count = 1;
-            if let Some(existing) = roll_grid.get(&n) {
-                roll_count += existing;
-            }
-            roll_grid.insert(n.clone(), roll_count);
+            neighbor_count += 1;
         }
+        roll_grid.insert(p.clone(), neighbor_count);
     }
 
     let style = "recursive";
@@ -48,7 +46,7 @@ pub fn part_2(test_data: TestData) -> String {
         let mut last_loop_forked_paper_rolls : usize = 1; // 1 is just an initial miss value
         while last_loop_forked_paper_rolls != forked_paper_rolls {
             last_loop_forked_paper_rolls = forked_paper_rolls;
-            let forkables = roll_grid.iter().filter(|(k, v)| **v < 4).map(|(k, v)| k).cloned().collect::<Vec<_>>();
+            let forkables = roll_grid.iter().filter(|(_, v)| **v < 4).map(|(k, _)| k.clone()).collect::<Vec<_>>();
             for forkable_roll in forkables {
                 forked_paper_rolls += 1;
                 roll_grid.remove(&forkable_roll);
@@ -58,7 +56,7 @@ pub fn part_2(test_data: TestData) -> String {
                     }
                     let mut roll_count = 0;
                     if let Some(&existing) = roll_grid.get(&n) {
-                        roll_count = 1.max(existing) - 1;
+                        roll_count = usize::max(1, existing) - 1;
                     }
                     roll_grid.insert(n.clone(), roll_count);
                 }
@@ -68,7 +66,8 @@ pub fn part_2(test_data: TestData) -> String {
     else if style == "recursive" {
         // Every roll that has less than four neighbors is the starting point of a "fire"
         let initial_len = roll_grid.len();
-        let forkables = roll_grid.iter().filter(|(k, v)| **v < 4).map(|(k, v)| k).cloned().collect::<Vec<_>>();
+        let mut forkables : Vec<Point> = Vec::new();
+        let forkables = roll_grid.iter().filter(|(_, v)| **v < 4).map(|(k, _)| k.clone()).collect::<Vec<_>>();
         log::grid(&roll_grid);
         for f in forkables {
             if roll_grid.contains_key(&f) {
