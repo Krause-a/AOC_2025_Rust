@@ -177,6 +177,7 @@ impl<R: BufRead> Iterator for AssumeChars<R> {
 }
 
 pub mod log {
+    use super::Point;
     static LOG_LEVEL : std::sync::OnceLock<LogLevel> = std::sync::OnceLock::new();
     pub fn parse_and_set_log_level(level_string: &str) {
         let level;
@@ -214,6 +215,57 @@ pub mod log {
             let msg = msg_fn();
             eprintln!("[{prefix}] {msg}");
         }
+    }
+
+    // For now I am assuming that any inline type of logging would be debug
+    pub fn inline<T, F: FnOnce() -> String>(t: T, msg_fn: F) -> T {
+        debug(msg_fn);
+        t
+    }
+
+    // For now I am assuming that any grid type of logging would be debug
+    pub fn grid<T>(grid: &std::collections::HashMap<Point, T>)
+        where T: std::fmt::Display,
+    {
+        debug(|| {
+            let mut max_p : Option<Point> = None;
+            let mut min_p : Option<Point> = None;
+            for (p, c) in grid.iter() {
+                if let Some(max) = max_p.as_mut() {
+                    max.x = max.x.max(p.x);
+                    max.y = max.y.max(p.y);
+                }
+                else {
+                    max_p = Some(p.to_owned());
+                }
+                if let Some(min) = min_p.as_mut() {
+                    min.x = min.x.min(p.x);
+                    min.y = min.y.min(p.y);
+                }
+                else{
+                    min_p = Some(p.to_owned());
+                }
+            }
+            let Some(min_p) = min_p else {return String::new()};
+            let Some(max_p) = max_p else {return String::new()};
+            let mut all_lines : Vec<String> = Vec::with_capacity((max_p.y - min_p.y) as usize);
+            let mut line = String::with_capacity((max_p.x - min_p.x) as usize);
+            for y in min_p.y..=max_p.y {
+                line.clear();
+                for x in min_p.x..=max_p.x {
+                    let p = Point::new(x, y);
+                    if let Some(grid_value) = grid.get(&p) {
+                        line.push_str(&format!("{}", grid_value));
+                    }
+                    else {
+                        line.push(' ');
+                    }
+                }
+                all_lines.push(line.clone());
+            }
+            "\n".to_string() + &all_lines.join("\n")
+        });
+
     }
 
 
