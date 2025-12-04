@@ -38,6 +38,77 @@ impl TestData {
         let reader = io::BufReader::new(f);
         Ok(reader.assume_words(separator))
     }
+    pub fn get_grid(self: &Self) -> Result<HashMap<Point, char>, io::Error> {
+        let f = self.open_file()?;
+        let reader = io::BufReader::new(f);
+        let mut map = HashMap::new();
+
+        for (y, line) in reader.lines().enumerate() {
+            let line = line?;
+            for (x, c) in line.chars().enumerate() {
+                map.insert(Point::new(x as isize, y as isize), c);
+            }
+        }
+        Ok(map)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Point {
+    x: isize,
+    y: isize,
+}
+
+impl Point {
+    pub fn new(x: isize, y: isize) -> Point {
+        Point {
+            x: x,
+            y: y,
+        }
+    }
+    pub fn cardinal_neighbors(self: &Self) -> [Point; 4] {
+        [
+            Point::new(self.x + 1, self.y),
+            Point::new(self.x, self.y + 1),
+            Point::new(self.x - 1, self.y),
+            Point::new(self.x, self.y - 1),
+        ]
+    }
+    pub fn diagonal_neighbors(self: &Self) -> [Point; 4] {
+        [
+            Point::new(self.x + 1, self.y + 1),
+            Point::new(self.x - 1, self.y + 1),
+            Point::new(self.x - 1, self.y - 1),
+            Point::new(self.x + 1, self.y - 1),
+        ]
+    }
+    pub fn all_neighbors(self: &Self) -> [Point; 8] {
+        [
+            Point::new(self.x + 1, self.y),
+            Point::new(self.x + 1, self.y + 1),
+            Point::new(self.x, self.y + 1),
+            Point::new(self.x - 1, self.y + 1),
+            Point::new(self.x - 1, self.y),
+            Point::new(self.x - 1, self.y - 1),
+            Point::new(self.x, self.y - 1),
+            Point::new(self.x - 1, self.y - 1),
+        ]
+    }
+    pub fn cardinal_neighbors_in<T>(self: &Self, map: &HashMap<Point, T>) -> Vec<Point> {
+        self.cardinal_neighbors().into_iter().filter(|p| map.contains_key(&p)).collect()
+    }
+    pub fn diagonal_neighbors_in<T>(self: &Self, map: &HashMap<Point, T>) -> Vec<Point> {
+        self.diagonal_neighbors().into_iter().filter(|p| map.contains_key(&p)).collect()
+    }
+    pub fn all_neighbors_in<T>(self: &Self, map: &HashMap<Point, T>) -> Vec<Point> {
+        self.all_neighbors().into_iter().filter(|p| map.contains_key(&p)).collect()
+    }
+    pub fn add(self: &Self, other: &Self) -> Point {
+        Point::new(self.x + other.x, self.y + other.y)
+    }
+    pub fn sub(self: &Self, other: &Self) -> Point {
+        Point::new(self.x - other.x, self.y - other.y)
+    }
 }
 
 pub struct AssumeWords<R: BufRead> {
