@@ -65,16 +65,14 @@ struct Range {
 }
 
 impl Range {
-    fn new(a: usize, b: usize) -> Range {
-        let low = a.min(b);
-        let high = a.max(b);
+    fn new(low: usize, high: usize) -> Range {
         Range { low, high }
     }
     fn from(strs: (&str, &str)) -> Range {
         Range::new(strs.0.parse().unwrap(), strs.1.parse().unwrap())
     }
     fn is_valid(self: &Self) -> bool {
-        self.low < self.high
+        self.low <= self.high
     }
     fn contains(self: &Self, num: usize) -> bool {
         self.low <= num && num <= self.high
