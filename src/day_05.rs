@@ -29,7 +29,6 @@ pub fn part_2(test_data: TestData) -> String {
             break;
         }
         let mut range = Range::from(line.split_once("-").unwrap());
-        log::debug(|| format!("Initial Range: {}", range));
         to_delete_index.clear();
         for (i, existing_range) in ranges.iter().enumerate() {
             if range.contains_range(&existing_range) {
@@ -53,12 +52,9 @@ pub fn part_2(test_data: TestData) -> String {
         for &index in to_delete_index.iter().rev() {
             ranges.swap_remove(index);
         }
-        log::debug(|| format!("Final Range: {}", range));
-        if range.is_valid() {
-            ranges.push(range);
-        }
+        ranges.push(range);
     }
-    log::info(|| format!("All Ranges: {:?}", ranges));
+    log::info(|| format!("Final Ranges: {:?}", ranges));
     let fresh_count : usize = ranges.iter().map(|r| r.total_span()).sum();
     return fresh_count.to_string();
     // 345995423801858 "Not the right answer" yu no give direction!
