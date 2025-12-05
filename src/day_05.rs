@@ -57,9 +57,6 @@ pub fn part_2(test_data: TestData) -> String {
     log::info(|| format!("Final Ranges: {:?}", ranges));
     let fresh_count : usize = ranges.iter().map(|r| r.total_span()).sum();
     return fresh_count.to_string();
-    // 345995423801858 "Not the right answer" yu no give direction!
-    // 345995423801858 Another attempt same answer
-    // 345995423801858 Change around again and same answer
 }
 
 struct Range {
@@ -68,7 +65,9 @@ struct Range {
 }
 
 impl Range {
-    fn new(low: usize, high: usize) -> Range {
+    fn new(a: usize, b: usize) -> Range {
+        let low = a.min(b);
+        let high = a.max(b);
         Range { low, high }
     }
     fn from(strs: (&str, &str)) -> Range {
