@@ -69,7 +69,8 @@ pub fn part_2(test_data: TestData) -> String {
                     }
                     next_beams.insert(i + 1, path_count);
                 } else {
-                    next_beams.insert(i, path_count);
+                    let mut prev_count = *next_beams.get(&i).unwrap_or(&(0 as usize));
+                    next_beams.insert(i, path_count + prev_count);
                 }
             }
         }
