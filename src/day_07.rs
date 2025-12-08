@@ -57,23 +57,24 @@ pub fn part_2(test_data: TestData) -> String {
     next_beams.insert(s_pos, 1);
     for line in lines {
         (next_beams, current_beams) = (current_beams, next_beams);
+        log::debug(|| format!("{:?}", current_beams));
         next_beams.clear();
         for (i, ch) in line.chars().enumerate() {
             let mut path_count = *current_beams.get(&i).unwrap_or(&(0 as usize));
             if path_count > 0 {
                 if ch == '^' {
                     if i > 0 {
-                        let mut prev_count = *current_beams.get(&(i - 1)).unwrap_or(&(0 as usize));
+                        let mut prev_count = *next_beams.get(&(i - 1)).unwrap_or(&(0 as usize));
                         next_beams.insert(i - 1, prev_count + path_count);
                     }
                     next_beams.insert(i + 1, path_count);
                 } else {
-                    let mut prev_count = *current_beams.get(&i).unwrap_or(&(0 as usize));
-                    next_beams.insert(i, prev_count + path_count);
+                    next_beams.insert(i, path_count);
                 }
             }
         }
     }
+        log::debug(|| format!("{:?}", next_beams));
 
     return next_beams.values().into_iter().sum::<usize>().to_string();
 
