@@ -51,6 +51,9 @@ impl TestData {
         }
         Ok(map)
     }
+    pub fn is_test(self: &Self) -> bool {
+        return self.test;
+    }
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
