@@ -1,5 +1,5 @@
 #![allow(unused, dead_code)]
-use std::{collections::BinaryHeap, fmt::Debug, str::FromStr, string::ParseError};
+use std::{collections::{BinaryHeap, HashMap}, fmt::Debug, hash::Hash, str::FromStr, string::ParseError};
 
 use crate::utility::*;
 
@@ -25,6 +25,28 @@ pub fn part_1(test_data: TestData) -> String {
             ));
         }
     }
+
+    let mut graph = graph::Graph::new();
+    let mut coord_to_index : HashMap<Point3, usize> = HashMap::new();
+    for i in 0..desired_connections {
+        let connection = connections.pop().unwrap();
+        let j_1_index;
+        if let Some(&existing_index) = coord_to_index.get(&connection.junc_1.v) {
+            j_1_index = existing_index;
+        }
+        else {
+            j_1_index = graph.add_node(&connection.junc_1.v);
+        }
+        let j_2_index;
+        if let Some(&existing_index) = coord_to_index.get(&connection.junc_2.v) {
+            j_2_index = existing_index;
+        }
+        else {
+            j_2_index = graph.add_node(&connection.junc_2.v);
+        }
+        graph.add_edge(j_1_index, j_2_index);
+    }
+
     log::debug(|| format!("{:?}", connections.pop().unwrap()));
 
     return "0".to_string();
@@ -33,6 +55,45 @@ pub fn part_1(test_data: TestData) -> String {
 pub fn part_2(test_data: TestData) -> String {
     return String::from("Wowies Day 8 Part 2");
 }
+
+mod graph {
+    pub struct Graph<T> {
+        nodes: Vec<Node<T>>,
+    }
+
+    pub struct Node<T>
+        where T: Sized
+    {
+        value: T,
+        neighbors: Vec<usize>,
+    }
+
+    impl<T> Node<T> {
+        pub fn new(v: T) -> Node<T> {
+            Node { value: v, neighbors: Vec::new() }
+        }
+    }
+
+    impl<T> Graph<T> {
+        pub fn new() -> Graph<T> {
+            Graph { nodes: Vec::new() }
+        }
+        pub fn add_node(self: &mut Self, v: T) -> usize {
+            let id = self.nodes.len();
+            self.nodes.push(Node::new(v));
+            id
+        }
+        pub fn add_edge(self: &mut Self, a: usize, b: usize) {
+            self.nodes[a].neighbors.push(b);
+            self.nodes[b].neighbors.push(a);
+        }
+        pub fn get_node(self: &Self, index: usize) -> Option<&Node<T>> {
+            self.nodes.get(index)
+        }
+    }
+
+}
+
 
 // TODO: Consider moving into utility file
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -56,6 +117,16 @@ impl Point3 {
         let d_y = (self.y - other.y).abs();
         let d_z = (self.z - other.z).abs();
         (d_x.powi(2) + d_y.powi(2) + d_z.powi(2)).sqrt()
+    }
+}
+
+impl Eq for Point3 {}
+
+impl Hash for Point3 {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write_i32(self.x as i32);
+        state.write_i32(self.y as i32);
+        state.write_i32(self.z as i32);
     }
 }
 
