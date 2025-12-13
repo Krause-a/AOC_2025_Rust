@@ -1,5 +1,5 @@
 #![allow(unused, dead_code)]
-use std::{collections::{BinaryHeap, HashMap}, fmt::Debug, hash::Hash, str::FromStr, string::ParseError};
+use std::{collections::{BinaryHeap, HashMap, HashSet}, fmt::Debug, hash::Hash, str::FromStr, string::ParseError};
 
 use crate::utility::*;
 
@@ -14,8 +14,8 @@ pub fn part_1(test_data: TestData) -> String {
 
     // TODO: Make this a min heap based on connection distances
     let mut connections : BinaryHeap<Connection> = BinaryHeap::new();
-    for j_1 in junctions.iter() {
-        for j_2 in junctions.iter() {
+    for (i, j_1) in junctions.iter().enumerate() {
+        for j_2 in junctions.iter().skip(i) {
             if j_1 == j_2 {
                 continue;
             }
@@ -30,26 +30,61 @@ pub fn part_1(test_data: TestData) -> String {
     let mut coord_to_index : HashMap<Point3, usize> = HashMap::new();
     for i in 0..desired_connections {
         let connection = connections.pop().unwrap();
+        log::debug(|| format!("Checking connection: {:?}", connection));
         let j_1_index;
+        let mut both_existing = true;
         if let Some(&existing_index) = coord_to_index.get(&connection.junc_1.v) {
             j_1_index = existing_index;
         }
         else {
-            j_1_index = graph.add_node(&connection.junc_1.v);
+            j_1_index = graph.add_node(connection.junc_1.v);
+            coord_to_index.insert(connection.junc_1.v, j_1_index);
+            both_existing = false;
         }
         let j_2_index;
         if let Some(&existing_index) = coord_to_index.get(&connection.junc_2.v) {
             j_2_index = existing_index;
         }
         else {
-            j_2_index = graph.add_node(&connection.junc_2.v);
+            j_2_index = graph.add_node(connection.junc_2.v);
+            coord_to_index.insert(connection.junc_2.v, j_2_index);
+            both_existing = false;
+        }
+        if both_existing {
+            log::debug(|| format!("Both alread existed!"));
         }
         graph.add_edge(j_1_index, j_2_index);
     }
 
-    log::debug(|| format!("{:?}", connections.pop().unwrap()));
+    let mut webs : Vec<HashSet<Point3>> = Vec::new();
 
-    return "0".to_string();
+    let mut connection_counts = Vec::new();
+    for node in coord_to_index.iter().map(|(_, i)| graph.get_node(*i).unwrap()) {
+        log::debug(|| format!("{:?}", node));
+        if webs.iter().all(|web| !web.contains(&node.value)) {
+            let mut web = HashSet::new();
+            connection_counts.push(count_connections_into(&graph, node, &mut web));
+            webs.push(web);
+        }
+    }
+    connection_counts.sort();
+    let top_3_connections = connection_counts.into_iter().take(3);
+    let mult_total : usize = top_3_connections.reduce(|acc, v| acc * v).unwrap();
+
+    return mult_total.to_string();
+}
+
+fn count_connections_into(g: &graph::Graph<Point3>, n: &graph::Node<Point3>, s: &mut HashSet<Point3>) -> usize {
+    if s.contains(&n.value) {
+        return 0;
+    }
+    s.insert(n.value.clone());
+    let mut connections = 1;
+    for neighbor_index in n.neighbors.iter() {
+        let neighbor = g.get_node(*neighbor_index).unwrap();
+        connections += count_connections_into(g, neighbor, s);
+    }
+    return connections;
 }
 
 pub fn part_2(test_data: TestData) -> String {
@@ -57,15 +92,17 @@ pub fn part_2(test_data: TestData) -> String {
 }
 
 mod graph {
+    #[derive(Debug)]
     pub struct Graph<T> {
         nodes: Vec<Node<T>>,
     }
 
+    #[derive(Debug)]
     pub struct Node<T>
         where T: Sized
     {
-        value: T,
-        neighbors: Vec<usize>,
+        pub value: T,
+        pub neighbors: Vec<usize>,
     }
 
     impl<T> Node<T> {
@@ -124,9 +161,58 @@ impl Eq for Point3 {}
 
 impl Hash for Point3 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_i32(self.x as i32);
-        state.write_i32(self.y as i32);
-        state.write_i32(self.z as i32);
+        state.write_u32(self.x.to_bits());
+        state.write_u32(self.y.to_bits());
+        state.write_u32(self.z.to_bits());
+    }
+}
+
+#[cfg(test)]
+mod test_point_3 {
+    use std::hash::Hasher;
+
+    use super::*;
+
+    #[test]
+    fn test_point_hash() {
+        let collection = vec![
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(0.0, 1.2345, 0.0),
+            Point3::new(100.001, 0.0, 0.0),
+            Point3::new(100.0, 0.0, 0.0),
+            Point3::new(0.0, 1.2343, 0.0),
+            Point3::new(162.0, 817.0, 812.0),
+            Point3::new(425.0, 690.0, 689.0),
+            Point3::new(162.0, 817.0, 812.0),
+            Point3::new(431.0, 825.0, 988.0),
+            Point3::new(906.0, 360.0, 560.0),
+            Point3::new(805.0, 96.0, 715.0),
+            Point3::new(425.0, 690.0, 689.0),
+            Point3::new(431.0, 825.0, 988.0),
+            Point3::new(862.0, 61.0, 35.0),
+            Point3::new(984.0, 92.0, 344.0),
+        ];
+
+
+        for p1 in collection.iter() {
+            let mut p1_hasher = std::hash::DefaultHasher::new();
+            p1.hash(&mut p1_hasher);
+            let p1_hash = p1_hasher.finish();
+            for p2 in collection.iter() {
+                let mut p2_hasher = std::hash::DefaultHasher::new();
+                let is_eq = p1.eq(p2);
+                let is_strict_eq = p1.x == p2.x && p1.y == p2.y && p1.z == p2.z;
+                assert_eq!(is_eq, is_strict_eq);
+                p2.hash(&mut p2_hasher);
+                let p2_hash = p2_hasher.finish();
+                if is_eq {
+                    assert_eq!(p1_hash, p2_hash);
+                }
+                else {
+                    assert_ne!(p1_hash, p2_hash);
+                }
+            }
+        }
     }
 }
 
@@ -160,14 +246,12 @@ impl FromStr for Point3 {
 #[derive(Debug)]
 struct Junction {
     v: Point3,
-    circut_member: usize,
 }
 
 impl Junction {
     fn new(v: Point3) -> Junction {
         Junction {
             v,
-            circut_member: 1,
         }
     }
 }
