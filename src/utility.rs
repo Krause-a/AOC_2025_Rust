@@ -1,6 +1,6 @@
 #![allow(unused, dead_code)]
 
-use std::{cmp, collections::HashMap, fs, io::{self, BufRead, Bytes, Lines, Read}};
+use std::{cmp, collections::HashMap, fs, io::{self, BufRead, Bytes, Lines, Read}, str::FromStr};
 
 pub struct TestData {
     file_path: std::path::PathBuf,
@@ -58,8 +58,8 @@ impl TestData {
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Point {
-    x: isize,
-    y: isize,
+    pub x: isize,
+    pub y: isize,
 }
 
 impl Point {
@@ -111,6 +111,45 @@ impl Point {
     }
     pub fn sub(self: &Self, other: &Self) -> Point {
         Point::new(self.x - other.x, self.y - other.y)
+    }
+}
+
+impl FromStr for Point {
+    type Err = ParsePointError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let nums = vec!['-','1','2','3','4','5','6','7','8','9','0'];
+        let splits = s.split(|c| !nums.contains(&c));
+        let mut v1 = None;
+        let mut v2 = None;
+        for split in splits {
+            if split.len() < 1 {
+                continue;
+            }
+            if v1.is_none() {
+                v1 = Some(split)
+            } else if v2.is_none() {
+                v2 = Some(split)
+            } else {
+                return Err(ParsePointError("Too many items in string".to_string()));
+            }
+        }
+        if v1.is_some() && v2.is_some() {
+            let v1_num = v1.unwrap().parse().map_err(|_| ParsePointError("Item is not an isize".to_string()))?;
+            let v2_num = v2.unwrap().parse().map_err(|_| ParsePointError("Item is not an isize".to_string()))?;
+            Ok(Point::new(v1_num, v2_num))
+        }
+        else {
+            Err(ParsePointError("Not enough items in string".to_string()))
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ParsePointError(String);
+impl std::error::Error for ParsePointError {}
+impl std::fmt::Display for ParsePointError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Point parse error: {}", self.0)
     }
 }
 
