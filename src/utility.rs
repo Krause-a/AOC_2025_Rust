@@ -1,6 +1,6 @@
 #![allow(unused, dead_code)]
 
-use std::{cmp, collections::HashMap, fs, io::{self, BufRead, Bytes, Lines, Read}, str::FromStr};
+use std::{cmp, collections::HashMap, fs, hash::{BuildHasher, Hash, Hasher}, io::{self, BufRead, Bytes, Lines, Read}, str::FromStr};
 
 pub struct TestData {
     file_path: std::path::PathBuf,
@@ -56,7 +56,7 @@ impl TestData {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Point {
     pub x: isize,
     pub y: isize,
@@ -97,13 +97,13 @@ impl Point {
             Point::new(self.x + 1, self.y - 1),
         ]
     }
-    pub fn cardinal_neighbors_in<T>(self: &Self, map: &HashMap<Point, T>) -> Vec<Point> {
+    pub fn cardinal_neighbors_in<T>(self: &Self, map: &HashMap<Point, T, impl BuildHasher>) -> Vec<Point> {
         self.cardinal_neighbors().into_iter().filter(|p| map.contains_key(&p)).collect()
     }
-    pub fn diagonal_neighbors_in<T>(self: &Self, map: &HashMap<Point, T>) -> Vec<Point> {
+    pub fn diagonal_neighbors_in<T>(self: &Self, map: &HashMap<Point, T, impl BuildHasher>) -> Vec<Point> {
         self.diagonal_neighbors().into_iter().filter(|p| map.contains_key(&p)).collect()
     }
-    pub fn all_neighbors_in<T>(self: &Self, map: &HashMap<Point, T>) -> Vec<Point> {
+    pub fn all_neighbors_in<T>(self: &Self, map: &HashMap<Point, T, impl BuildHasher>) -> Vec<Point> {
         self.all_neighbors().into_iter().filter(|p| map.contains_key(&p)).collect()
     }
     pub fn add(self: &Self, other: &Self) -> Point {
@@ -141,6 +141,14 @@ impl FromStr for Point {
         else {
             Err(ParsePointError("Not enough items in string".to_string()))
         }
+    }
+}
+
+impl Hash for Point {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write_isize(self.x);
+        state.write_isize(self.y);
     }
 }
 
@@ -219,6 +227,8 @@ impl<R: BufRead> Iterator for AssumeChars<R> {
 }
 
 pub mod log {
+    use std::hash::BuildHasher;
+
     use super::Point;
     static LOG_LEVEL : std::sync::OnceLock<LogLevel> = std::sync::OnceLock::new();
     pub fn parse_and_set_log_level(level_string: &str) {
@@ -266,7 +276,7 @@ pub mod log {
     }
 
     // For now I am assuming that any grid type of logging would be debug
-    pub fn grid<T>(grid: &std::collections::HashMap<Point, T>)
+    pub fn grid<T>(grid: &std::collections::HashMap<Point, T, impl BuildHasher>)
         where T: std::fmt::Display,
     {
         debug(|| {
@@ -422,5 +432,62 @@ mod test {
         for i in 0..a.len() {
             assert_eq!(a[i].num_cmp(b[i]), res[i], "Failed at index on trait \"{i}\"");
         }
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct FastHasher {
+    hash: u64,
+}
+
+impl FastHasher {
+    #[inline]
+    fn mix(hash: u64, x: u64) -> u64 {
+        let mut z = hash ^ x;
+        z = z.wrapping_add(0x9e3779b97f4a7c15);
+        z = (z ^ (z >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94d049bb133111eb);
+        z ^ (z >> 31)
+    }
+}
+
+impl Hasher for FastHasher {
+    #[inline]
+    fn finish(&self) -> u64 {
+        self.hash
+    }
+
+    #[inline]
+    fn write_isize(&mut self, i: isize) {
+        self.hash = Self::mix(self.hash, (i as u64));
+    }
+
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) {
+        let mut i = 0;
+        while i + 8 <= bytes.len() {
+            let chunk = u64::from_be_bytes(bytes[i..i+8].try_into().expect("Failed bytes conversion"));
+            self.hash = Self::mix(self.hash, chunk);
+            i += 8;
+        }
+        if i < bytes.len() {
+            let mut tail = 0u64;
+            for (shift, &b) in bytes[i..].iter().enumerate() {
+                tail |= (b as u64) << (shift * 8);
+            }
+            self.hash = Self::mix(self.hash, tail);
+        }
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct FastBuildHasher;
+
+impl BuildHasher for FastBuildHasher {
+    type Hasher = FastHasher;
+
+    #[inline]
+    fn build_hasher(&self) -> Self::Hasher {
+        FastHasher::default()
     }
 }

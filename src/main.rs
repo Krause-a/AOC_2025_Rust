@@ -11,7 +11,7 @@ mod day_09;
 mod day_10;
 mod day_11;
 mod day_12;
-use std::{collections::HashMap, fs, path::PathBuf, io::{Read}};
+use std::{collections::HashMap, fs, io::Read, path::PathBuf};
 use utility::StrNum;
 
 fn main() {

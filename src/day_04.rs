@@ -1,5 +1,5 @@
 #![allow(unused, dead_code)]
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::BuildHasher};
 
 use crate::utility::*;
 
@@ -23,7 +23,9 @@ pub fn part_1(test_data: TestData) -> String {
 
 pub fn part_2(test_data: TestData) -> String {
     let grid = test_data.get_grid().unwrap();
-    let mut roll_grid : HashMap<Point, usize> = HashMap::with_capacity(grid.len());
+    let mut roll_grid : HashMap<Point, usize, FastBuildHasher> = HashMap::with_hasher(FastBuildHasher);
+    // let mut roll_grid : HashMap<Point, usize> = HashMap::new();
+    roll_grid.reserve(grid.len());
     for (&p, &c) in grid.iter() {
         if c != '@' {
             continue;
@@ -83,7 +85,7 @@ pub fn part_2(test_data: TestData) -> String {
     return forked_paper_rolls.to_string();
 }
 
-fn remove_rolls(grid: &mut HashMap<Point, usize>, p: Point) {
+fn remove_rolls(grid: &mut HashMap<Point, usize, impl BuildHasher>, p: Point) {
     grid.remove(&p);
     for n in p.all_neighbors_in(&grid) {
         if let Some(count) = grid.get_mut(&n).map(|v| (*v)-1).to_owned() {
