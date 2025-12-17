@@ -6,8 +6,8 @@ use crate::utility::*;
 pub fn part_1(test_data: TestData) -> String {
     let points : Vec<_> = test_data.get_lines().unwrap().map(|l| Point::from_str(&l).unwrap()).collect();
     let mut rects = BinaryHeap::new();
-    for p1 in points.iter() {
-        for p2 in points.iter() {
+    for (i, p1) in points.iter().enumerate() {
+        for p2 in points.iter().skip(i) {
             if p1 == p2 {
                 continue
             }
@@ -22,6 +22,7 @@ pub fn part_2(test_data: TestData) -> String {
     return String::from("Wowies Day 9 Part 2");
 }
 
+#[derive(Debug)]
 pub struct Rect {
     p1: Point,
     p2: Point,
@@ -35,7 +36,7 @@ impl Rect {
         }
     }
     fn area(self: &Self) -> usize {
-        self.p1.x.abs_diff(self.p2.x) * self.p1.y.abs_diff(self.p2.y)
+        (1 + self.p1.x.abs_diff(self.p2.x)) * (1 + self.p1.y.abs_diff(self.p2.y))
     }
 }
 
