@@ -22,9 +22,10 @@ fn main() {
     // 2 1 1
     // 4 2
     // 4
+    //   # This is no-input which will run all days.
     let mut args = std::env::args();
     let _called_exec = args.next();
-    let day : usize = args.next().expect("Missing DAY argument").parse().expect("DAY argument must be a number");
+    let day_option : Option<usize> = args.next().map(|a| a.parse().expect("Day argument provided but failed to parse as usize"));
     let mut part : usize = 0;
     if let Some(part_str) = args.next() {
         part = part_str.parse().expect("PART argument must be a number");
@@ -47,48 +48,60 @@ fn main() {
     utility::log::parse_and_set_log_level(debug_string.unwrap_or("".to_string()).as_str());
 
     // 2. Select the correct data file
-    let mut data_file_name = format!("data/{day:02}");
-    if use_test_set {
-        data_file_name += format!("_{part}_test").as_str();
-    }
-    let file_metadata = fs::metadata(data_file_name.clone()).expect("Couldn't open file metadata");
-    if file_metadata.len() < 5 && use_test_set {
-        data_file_name = format!("data/{day:02}_1_test");
-    }
-    let mut test_data = utility::TestData::new(PathBuf::from(data_file_name.clone()), day, part, use_test_set);
+    let day_range = if day_option.is_some() {
+        let day = day_option.unwrap();
+        day..=day
+    } else {
+        1..=12
+    };
+    let full_time_start = std::time::Instant::now();
+    for day in day_range {
+        let mut data_file_name = format!("data/{day:02}");
+        if use_test_set {
+            data_file_name += format!("_{part}_test").as_str();
+        }
+        let file_metadata = fs::metadata(data_file_name.clone()).expect("Couldn't open file metadata");
+        if file_metadata.len() < 5 && use_test_set {
+            data_file_name = format!("data/{day:02}_1_test");
+        }
+        let mut test_data = utility::TestData::new(PathBuf::from(data_file_name.clone()), day, part, use_test_set);
 
-    // 3. Run correct day part
-    let start = std::time::Instant::now();
-    println!();
-    if part == 0 {
-        let answer_1 = run_day_part(day, 1, test_data);
-        test_data = utility::TestData::new(PathBuf::from(data_file_name), day, part, use_test_set);
-        println!("The part 1 answer is: {answer_1}");
-        let comp = compare_to_answer(&answer_1, day, 1, use_test_set);
-        if comp.len() > 0 {
-            println!("{}", comp);
-        }
+        // 3. Run correct day part
         println!();
-        let answer_2 = run_day_part(day, 2, test_data);
-        println!("The part 2 answer is: {answer_2}");
-        let comp = compare_to_answer(&answer_2, day, 2, use_test_set);
-        if comp.len() > 0 {
-            println!("{}", comp);
+        let start = std::time::Instant::now();
+        if part == 0 {
+            let answer_1 = run_day_part(day, 1, test_data);
+            test_data = utility::TestData::new(PathBuf::from(data_file_name), day, part, use_test_set);
+            println!("The part 1 answer is: {answer_1}");
+            let comp = compare_to_answer(&answer_1, day, 1, use_test_set);
+            if comp.len() > 0 {
+                println!("{}", comp);
+            }
+            println!();
+            let answer_2 = run_day_part(day, 2, test_data);
+            println!("The part 2 answer is: {answer_2}");
+            let comp = compare_to_answer(&answer_2, day, 2, use_test_set);
+            if comp.len() > 0 {
+                println!("{}", comp);
+            }
+            println!();
         }
-        println!();
+        else {
+            let answer = run_day_part(day, part, test_data);
+            println!("The part {part} answer is: {answer}");
+            let comp = compare_to_answer(&answer, day, part, use_test_set);
+            if comp.len() > 0 {
+                println!("{}", comp);
+            }
+            println!();
+        }
+        let duration = start.elapsed();
+        println!("Found in ({:?})", duration);
     }
-    else {
-        let answer = run_day_part(day, part, test_data);
-        println!("The part {part} answer is: {answer}");
-        let comp = compare_to_answer(&answer, day, part, use_test_set);
-        if comp.len() > 0 {
-            println!("{}", comp);
-        }
-        println!();
+    if day_option.is_none() {
+        let full_time_duration = full_time_start.elapsed();
+        println!("All days done in ({:?})", full_time_duration);
     }
-    let duration = start.elapsed();
-
-    println!("Found in ({:?})", duration);
 }
 
 fn run_day_part(day: usize, part: usize, test_data: utility::TestData) -> String {
